@@ -174,7 +174,7 @@ export default function Inspector({ workspace, selectedNodeId, collapsed, onTogg
     const position = findClearPosition(
       workspace.nodes.filter((item) => !item.deletedAt),
       { x: node.position.x + 250, y: node.position.y },
-      node.type,
+      node,
     )
     const duplicate = duplicateNode(node.id, position)
     if (duplicate) onSelectNode(duplicate.id)

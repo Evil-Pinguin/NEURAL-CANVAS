@@ -35,6 +35,7 @@ describe('IndexedDB workspace persistence', () => {
     const workspace = createInitialWorkspace()
     workspace.settings.defaultView = 'developer'
     workspace.nodes.find((node) => node.id === 'systems-thinking')!.favorite = true
+    workspace.nodes.find((node) => node.id === 'systems-thinking')!.frameSize = { width: 520, height: 320 }
     workspace.nodes.find((node) => node.id === 'learning-log')!.markdownContent = '# Local note'
     await writeWorkspace(workspace)
 

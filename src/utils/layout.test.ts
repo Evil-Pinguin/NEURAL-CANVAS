@@ -9,7 +9,7 @@ describe('findClearPosition', () => {
     const position = findClearPosition(nodes, { x: 360, y: 245 }, kind)
     const candidateFrame = getNodeFrameSize(kind)
     const overlaps = nodes.some((node) => {
-      const occupiedFrame = getNodeFrameSize(node.type)
+      const occupiedFrame = getNodeFrameSize(node)
       return position.x < node.position.x + occupiedFrame.width
         && position.x + candidateFrame.width > node.position.x
         && position.y < node.position.y + occupiedFrame.height
@@ -24,11 +24,26 @@ describe('findClearPosition', () => {
     expect(getNodeFrameSize('idea').height).toBeGreaterThan(getNodeFrameSize('concept').height)
   })
 
+  it('keeps new objects clear of the saved full size of an enlarged idea', () => {
+    const idea = createInitialWorkspace().nodes.find((node) => node.id === 'systems-thinking')!
+    const resizedIdea = { ...idea, frameSize: { width: 520, height: 320 } }
+    const position = findClearPosition([resizedIdea], idea.position, 'idea')
+    const candidateFrame = getNodeFrameSize('idea')
+    const occupiedFrame = getNodeFrameSize(resizedIdea)
+    const overlaps = position.x < resizedIdea.position.x + occupiedFrame.width
+      && position.x + candidateFrame.width > resizedIdea.position.x
+      && position.y < resizedIdea.position.y + occupiedFrame.height
+      && position.y + candidateFrame.height > resizedIdea.position.y
+
+    expect(occupiedFrame).toEqual({ width: 520, height: 320 })
+    expect(overlaps).toBe(false)
+  })
+
   it('keeps the starter workspace clear of overlaps with the larger idea frames', () => {
     const nodes = createInitialWorkspace().nodes
     const overlaps = nodes.some((node, index) => nodes.slice(index + 1).some((other) => {
-      const nodeFrame = getNodeFrameSize(node.type)
-      const otherFrame = getNodeFrameSize(other.type)
+      const nodeFrame = getNodeFrameSize(node)
+      const otherFrame = getNodeFrameSize(other)
       return node.position.x < other.position.x + otherFrame.width
         && node.position.x + nodeFrame.width > other.position.x
         && node.position.y < other.position.y + otherFrame.height

@@ -9,7 +9,14 @@ import {
 } from '../domain/model'
 
 export const WORKSPACE_EXPORT_FORMAT = 'neural-canvas-workspace' as const
-export const WORKSPACE_EXPORT_VERSION = 1 as const
+export const WORKSPACE_EXPORT_VERSION = 2 as const
+
+const version1WorkspaceExportSchema = z.object({
+  format: z.literal(WORKSPACE_EXPORT_FORMAT),
+  version: z.literal(1),
+  exportedAt: z.string().datetime(),
+  workspace: workspaceSchema,
+}).strict()
 
 export const workspaceExportSchema = z.object({
   format: z.literal(WORKSPACE_EXPORT_FORMAT),
@@ -37,18 +44,20 @@ export function createWorkspaceExport(workspace: Workspace, exportedAt = new Dat
   })
 }
 
-/** Accept current versioned backups and legacy unversioned workspace JSON. */
+/** Accept v1/v2 versioned backups and legacy unversioned workspace JSON. */
 export function parseWorkspaceImport(value: unknown): WorkspaceImport {
   if (isRecord(value) && ('format' in value || 'version' in value)) {
     if (value.format !== WORKSPACE_EXPORT_FORMAT) {
       throw new Error('Этот файл не является резервной копией рабочего пространства Нейро-холст.')
     }
-    if (value.version !== WORKSPACE_EXPORT_VERSION) {
+    if (value.version !== 1 && value.version !== WORKSPACE_EXPORT_VERSION) {
       const suppliedVersion = typeof value.version === 'number' ? value.version : 'неизвестна'
-      throw new Error(`Версия резервной копии ${suppliedVersion} не поддерживается. Приложение поддерживает версию ${WORKSPACE_EXPORT_VERSION}.`)
+      throw new Error(`Версия резервной копии ${suppliedVersion} не поддерживается. Приложение поддерживает версии 1 и ${WORKSPACE_EXPORT_VERSION}.`)
     }
 
-    const parsed = workspaceExportSchema.safeParse(value)
+    const parsed = value.version === 1
+      ? version1WorkspaceExportSchema.safeParse(value)
+      : workspaceExportSchema.safeParse(value)
     if (!parsed.success) throw new Error(formatValidationError(parsed.error))
     return { workspace: parsed.data.workspace, legacy: false }
   }
@@ -63,7 +72,8 @@ export function formatValidationError(error: z.ZodError): string {
     format: 'формат файла', version: 'версия файла', exportedAt: 'дата экспорта',
     workspace: 'рабочее пространство', nodes: 'узлы', edges: 'связи', architectureNotes: 'архитектурные заметки',
     settings: 'настройки', defaultView: 'стартовый раздел', id: 'идентификатор', name: 'название', description: 'описание', title: 'заголовок',
-    type: 'тип', position: 'расположение', x: 'координата X', y: 'координата Y', tags: 'теги', color: 'цвет', favorite: 'избранное',
+    type: 'тип', position: 'расположение', x: 'координата X', y: 'координата Y', width: 'ширина', height: 'высота',
+    frameSize: 'размер рамки', tags: 'теги', color: 'цвет', favorite: 'избранное',
     status: 'статус', priority: 'приоритет', sourceId: 'исходный узел', targetId: 'целевой узел', label: 'название связи',
     relationType: 'тип связи', projectId: 'проект', relatedNodeIds: 'связанные узлы', content: 'содержание',
     url: 'ссылка', code: 'код', codeLanguage: 'язык кода', properties: 'свойства', value: 'значение', property: 'свойство',

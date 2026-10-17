@@ -46,6 +46,34 @@ describe('workspace data contract', () => {
     if (parsed.success) expect(parsed.data.nodes.slice(-nodeTypes.length).map((node) => node.type)).toEqual(nodeTypes)
   })
 
+  it('persists bounded frame sizes for ideas while keeping other node types unchanged', () => {
+    const workspace = createInitialWorkspace()
+    const resized = workspaceSchema.parse({
+      ...workspace,
+      nodes: workspace.nodes.map((node) => node.id === 'systems-thinking'
+        ? { ...node, frameSize: { width: 520, height: 320 } }
+        : node),
+    })
+    expect(resized.nodes.find((node) => node.id === 'systems-thinking')?.frameSize)
+      .toEqual({ width: 520, height: 320 })
+
+    const nonIdeaSize = {
+      ...workspace,
+      nodes: workspace.nodes.map((node) => node.id === 'knowledge-graph'
+        ? { ...node, frameSize: { width: 520, height: 320 } }
+        : node),
+    }
+    expect(workspaceSchema.safeParse(nonIdeaSize).success).toBe(false)
+
+    const oversizedIdea = {
+      ...workspace,
+      nodes: workspace.nodes.map((node) => node.id === 'systems-thinking'
+        ? { ...node, frameSize: { width: 641, height: 320 } }
+        : node),
+    }
+    expect(workspaceSchema.safeParse(oversizedIdea).success).toBe(false)
+  })
+
   it('supports every required relation type on canonical edges', () => {
     const workspace = createInitialWorkspace()
     const edges = relationTypes.map((relationType) => ({

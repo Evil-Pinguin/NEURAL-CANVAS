@@ -349,7 +349,11 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
     }
 
     const nodes = state.workspace.nodes.map((node) => {
-      if (node.id === id) return { ...node, ...nodeUpdates, updatedAt: now }
+      if (node.id === id) {
+        const updatedNode = { ...node, ...nodeUpdates, updatedAt: now }
+        if (changesType && updates.type !== 'idea') delete updatedNode.frameSize
+        return updatedNode
+      }
       if (projectStopsBeingProject && node.type === 'task' && node.projectId === id) {
         return { ...node, projectId: null, updatedAt: now }
       }

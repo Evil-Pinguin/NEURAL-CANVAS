@@ -40,6 +40,23 @@ describe('workspace recycle and favorites', () => {
     expect(edges.at(-1)).toMatchObject({ sourceId: 'neural-canvas' })
   })
 
+  it('saves idea frame sizes without changing other node types or their positions', () => {
+    const store = useWorkspaceStore.getState()
+    const originalPosition = store.workspace.nodes.find((node) => node.id === 'systems-thinking')!.position
+    store.updateNode('systems-thinking', { frameSize: { width: 420, height: 260 } })
+
+    expect(useWorkspaceStore.getState().workspace.nodes.find((node) => node.id === 'systems-thinking'))
+      .toMatchObject({ frameSize: { width: 420, height: 260 }, position: originalPosition })
+
+    store.updateNode('knowledge-graph', { frameSize: { width: 420, height: 260 } })
+    expect(useWorkspaceStore.getState().workspace.nodes.find((node) => node.id === 'knowledge-graph')?.frameSize).toBeUndefined()
+
+    store.updateNode('systems-thinking', { type: 'concept' })
+    expect(useWorkspaceStore.getState().workspace.nodes.find((node) => node.id === 'systems-thinking'))
+      .toMatchObject({ type: 'concept' })
+    expect(useWorkspaceStore.getState().workspace.nodes.find((node) => node.id === 'systems-thinking')?.frameSize).toBeUndefined()
+  })
+
   it('adds typed relations, preserves metadata, permits ordinary cycles, and blocks dependency cycles', () => {
     const store = useWorkspaceStore.getState()
     const initialEdgeCount = store.workspace.edges.length

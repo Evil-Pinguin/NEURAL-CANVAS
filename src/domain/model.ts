@@ -147,6 +147,18 @@ export const customPropertySchema = z.object({
   value: z.string().max(1200),
 }).strict()
 
+export const ideaFrameSizeLimits = {
+  minWidth: 280,
+  minHeight: 136,
+  maxWidth: 640,
+  maxHeight: 560,
+} as const
+
+export const ideaFrameSizeSchema = z.object({
+  width: z.number().int().min(ideaFrameSizeLimits.minWidth).max(ideaFrameSizeLimits.maxWidth),
+  height: z.number().int().min(ideaFrameSizeLimits.minHeight).max(ideaFrameSizeLimits.maxHeight),
+}).strict()
+
 export const canvasNodeSchema = z.object({
   id: z.string().min(1),
   type: z.enum(nodeTypes),
@@ -155,6 +167,7 @@ export const canvasNodeSchema = z.object({
   markdownContent: z.string().max(100000).optional(),
   tags: z.array(z.string().trim().min(1).max(48)).max(20),
   color: z.enum(nodeColors),
+  frameSize: ideaFrameSizeSchema.optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
   position: z.object({ x: z.number().finite(), y: z.number().finite() }).strict(),
@@ -322,6 +335,13 @@ export const workspaceSchema = z.preprocess(migrateWorkspaceData, workspaceObjec
     }
     nodeIds.add(node.id)
     nodesById.set(node.id, node)
+    if (node.type !== 'idea' && node.frameSize) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['nodes', index, 'frameSize'],
+        message: 'Изменение размера доступно только для объектов типа «Идея».',
+      })
+    }
     if (node.type === 'task' && node.projectId) {
       const project = nodesById.get(node.projectId) ?? workspace.nodes.find((item) => item.id === node.projectId)
       if (project?.type !== 'project') {

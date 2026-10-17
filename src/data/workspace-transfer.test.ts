@@ -12,17 +12,31 @@ describe('versioned workspace backups', () => {
     const workspace = createInitialWorkspace()
     workspace.settings.defaultView = 'developer'
     workspace.nodes[0]!.favorite = true
+    workspace.nodes.find((node) => node.id === 'systems-thinking')!.frameSize = { width: 520, height: 320 }
     const backup = createWorkspaceExport(workspace, '2026-10-17T10:00:00.000Z')
 
     expect(backup).toMatchObject({
       format: 'neural-canvas-workspace',
-      version: 1,
+      version: 2,
       exportedAt: '2026-10-17T10:00:00.000Z',
       workspace: { settings: { defaultView: 'developer' } },
     })
     const parsed = parseWorkspaceImport(JSON.parse(JSON.stringify(backup)))
     expect(parsed.legacy).toBe(false)
     expect(parsed.workspace).toEqual(workspaceSchema.parse(workspace))
+  })
+
+  it('imports version-1 backups created before idea frame sizes were added', () => {
+    const workspace = createInitialWorkspace()
+    const imported = parseWorkspaceImport({
+      format: 'neural-canvas-workspace',
+      version: 1,
+      exportedAt: '2026-10-17T10:00:00.000Z',
+      workspace,
+    })
+
+    expect(imported.legacy).toBe(false)
+    expect(imported.workspace).toEqual(workspaceSchema.parse(workspace))
   })
 
   it('accepts legacy unversioned JSON and applies model defaults', () => {

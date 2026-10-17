@@ -99,6 +99,7 @@ function CanvasWorkspaceInner({
   const [contextMenu, setContextMenu] = useState<CanvasContextMenu | null>(null)
   const [editingEdge, setEditingEdge] = useState<CanvasEdgeData | null>(null)
   const addNode = useWorkspaceStore((state) => state.addNode)
+  const updateNode = useWorkspaceStore((state) => state.updateNode)
   const syncFlowNodes = useWorkspaceStore((state) => state.syncFlowNodes)
   const syncFlowEdges = useWorkspaceStore((state) => state.syncFlowEdges)
   const addEdge = useWorkspaceStore((state) => state.addEdge)
@@ -120,6 +121,11 @@ function CanvasWorkspaceInner({
     selectedNodeSet.forEach((id) => related.delete(id))
     return related
   }, [selectedNodeSet, visibleNodeIds, workspace.edges])
+  const handleIdeaFrameResize = useCallback((id: string, frameSize: { width: number; height: number }) => {
+    const currentNode = useWorkspaceStore.getState().workspace.nodes.find((node) => node.id === id)
+    if (currentNode?.type !== 'idea') return
+    updateNode(id, { frameSize })
+  }, [updateNode])
 
   const flowNodes = useMemo<FlowNode[]>(() => visibleNodes.map((node) => {
     const selected = selectedNodeSet.has(node.id)
@@ -133,10 +139,11 @@ function CanvasWorkspaceInner({
         dimmed: Boolean(normalizedQuery) && !matchesNodeQuery(node, normalizedQuery) && !selected && !related,
         related,
         unrelated: selectedNodeSet.size > 0 && !selected && !related,
+        ...(node.type === 'idea' ? { onFrameResize: handleIdeaFrameResize } : {}),
       },
       selected,
     }
-  }), [visibleNodes, normalizedQuery, selectedNodeSet, relatedNodeIds])
+  }), [visibleNodes, normalizedQuery, selectedNodeSet, relatedNodeIds, handleIdeaFrameResize])
 
   const flowEdges = useMemo<FlowEdge[]>(() => workspace.edges
     .filter((edge) => visibleNodeIds.has(edge.sourceId) && visibleNodeIds.has(edge.targetId))
